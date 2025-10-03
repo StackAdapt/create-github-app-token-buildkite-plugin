@@ -1,0 +1,45 @@
+#!/bin/bash
+set -euo pipefail
+
+PLUGIN_DIR="./.buildkite/create-github-app-token"
+
+# Set the required environment variables for the GitHub App Token generator
+export APP_ID=$BUILDKITE_GITHUB_ID_SECRET
+export PRIVATE_KEY=$BUILDKITE_GITHUB_PRIVATE_KEY_SECRET
+
+# Detect architecture
+ARCH=$(uname -m)
+GO_ARCH=""
+case "$ARCH" in
+  x86_64)
+    GO_ARCH="amd64"
+    ;;
+  aarch64|arm64)
+    GO_ARCH="arm64"
+    ;;
+  *)
+    echo "Unsupported architecture: $ARCH"
+    exit 1
+    ;;
+esac
+
+echo "~~~ :golang: Detected architecture: $ARCH (Go: $GO_ARCH)"
+
+# Download Go dependencies
+echo "~~~ :golang: Downloading Go dependencies"
+go mod download -C "$PLUGIN_DIR"
+
+# Build the binary for the detected architecture
+echo "~~~ :golang: Building GitHub App Token generator for $GO_ARCH"
+CGO_ENABLED=0 GOOS=linux GOARCH="$GO_ARCH" go build -C "$PLUGIN_DIR" -o "create-github-app-token"
+
+# Check if the binary was built successfully
+if [ -f "$PLUGIN_DIR/create-github-app-token" ]; then
+  echo "~~~ :github: Running GitHub App Token generator"
+  chmod +x "$PLUGIN_DIR/create-github-app-token"
+  "$PLUGIN_DIR/create-github-app-token"
+else
+  echo "~~~ :warning: Error: Binary build failed"
+  echo "Check the build logs for more information"
+  exit 1
+fi

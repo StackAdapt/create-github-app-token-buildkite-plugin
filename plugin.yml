@@ -1,0 +1,14 @@
+name: Create GitHub App Token
+description: Creates a GitHub App token for a given app ID and private key
+author: https://github.com/ehsanjso
+requirements:
+  - go
+  - bash
+configuration:
+  properties:
+    app-id:
+      type: string
+    private-key:
+      type: string
+    env-var-name:
+      type: string
